@@ -102,7 +102,7 @@ predictions = rec([image])
 ```
 
 What's different:
-- `SuryaInferenceManager` replaces `FoundationPredictor`. Same manager instance is shared across `LayoutPredictor`, `RecognitionPredictor`, `TableRecPredictor`.
+- `SuryaInferenceManager` replaces `FoundationPredictor`. Same manager instance is shared across `LayoutPredictor` and `RecognitionPredictor`. `TableRecPredictor` is now a standalone ONNX detector and takes no manager.
 - Output schemas changed: see the per-section JSON tables below. Highlights — `text_lines` → `blocks` (with `html`); layout dropped `top_k`, added `count`; table_rec dropped `is_header` / `colspan` / `rowspan` from cells.
 
 # Usage
@@ -298,33 +298,26 @@ The `results.json` file contains a dict keyed by input filename (no extension). 
 - `cols` - detected table columns
   - `polygon` / `bbox` - column geometry
   - `col_id` - 0-indexed column id
-- `cells` - geometric row × column intersections (simple mode)
+- `cells` - geometric row × column intersections
   - `polygon` / `bbox` - cell geometry
   - `row_id`, `col_id`, `cell_id`
-- `html` - full `<table>...</table>` HTML (only populated when `predict_full` is used; handles spanning cells / header rows). `null` in simple mode.
-- `mode` - `"simple"` or `"full"`
 - `image_bbox` - the table crop bbox
 - `error` - true if the table_rec call failed
-- `raw` - raw model output, for debugging
 
 **Performance tips**
 
-Table recognition routes through the shared VLM. Throughput tuning is the same as OCR.
+Table recognition is an RT-DETRv2 ONNX detector that runs on CPU — no VLM backend required.
 
 ### From python
 
 ```python
 from PIL import Image
-from surya.inference import SuryaInferenceManager
 from surya.table_rec import TableRecPredictor
 
-table_rec_predictor = TableRecPredictor(SuryaInferenceManager())
+table_rec_predictor = TableRecPredictor()
 
-# Default: rows + columns only, cells derived from intersections.
+# Rows + columns are detected; cells are derived from their intersections.
 table_predictions = table_rec_predictor([Image.open(IMAGE_PATH)])
-
-# Or full HTML output (better for spanning cells / headers):
-# table_predictions = table_rec_predictor.predict_full([image])
 ```
 
 ## Math / equations
@@ -335,7 +328,7 @@ surrounding prose, in KaTeX-compatible LaTeX. No separate LaTeX OCR pass.
 
 # Inference Backends
 
-Layout / OCR / table_rec all share one VLM, served either by `vllm` (GPU) or `llama.cpp` (CPU / Apple Silicon). The `SuryaInferenceManager` will spawn one automatically; you can also point at a pre-running server:
+Layout and OCR share one VLM, served either by `vllm` (GPU) or `llama.cpp` (CPU / Apple Silicon). The `SuryaInferenceManager` will spawn one automatically; you can also point at a pre-running server:
 
 ```bash
 # Attach to an existing vllm
@@ -354,7 +347,7 @@ export SURYA_INFERENCE_URL=http://localhost:8000/v1
 # Limitations
 
 - This is specialized for document OCR. Performance on photos or natural scenes is not the goal.
-- Layout / OCR / table_rec all need a running inference backend (vllm or llama.cpp). Detection runs purely on torch and works without it.
+- Layout / OCR need a running inference backend (vllm or llama.cpp). Detection and table recognition run purely on torch / ONNX and work without it.
 
 ## Troubleshooting
 

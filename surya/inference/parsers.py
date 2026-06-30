@@ -76,38 +76,7 @@ def parse_layout(text: str) -> List[ParsedLayoutBlock]:
     return out
 
 
-# ---- Table rec (TABLE_REC_PROMPT) ------------------------------------------
-
-
-@dataclass
-class ParsedTableElement:
-    label: str  # "Row" or "Col"
-    bbox: Tuple[float, float, float, float]
-
-
-def parse_table_rec(text: str) -> List[ParsedTableElement]:
-    """Parse JSON array of {label: "Row"|"Col", bbox: "x0 y0 x1 y1"} from
-    TABLE_REC_PROMPT output. Returns a flat list of Row + Col elements;
-    cell derivation is the caller's job."""
-    cleaned = _strip_fences(text)
-    m = _JSON_ARRAY_RE.search(cleaned)
-    if not m:
-        raise ValueError(f"No JSON array found in table_rec output: {text[:500]!r}")
-    raw = json.loads(m.group(0))
-    out: List[ParsedTableElement] = []
-    for item in raw:
-        label = str(item.get("label", "")).strip()
-        if label not in ("Row", "Col"):
-            continue
-        try:
-            bbox = _coerce_bbox(item["bbox"])
-        except (KeyError, ValueError):
-            continue
-        out.append(ParsedTableElement(label=label, bbox=bbox))
-    return out
-
-
-# ---- Block HTML (BLOCK_PROMPT for full table path / general block path) ---
+# ---- Block HTML (BLOCK_PROMPT for general block path) ---------------------
 
 
 def clean_block_html(html: str) -> str:

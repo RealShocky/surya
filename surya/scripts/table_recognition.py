@@ -24,22 +24,14 @@ logger = get_logger()
     help="Tables are already cropped, so don't re-detect tables.",
     default=False,
 )
-@click.option(
-    "--mode",
-    type=click.Choice(["simple", "full"]),
-    default="simple",
-    help="simple: rows+cols only (geometric cells). full: full HTML (BLOCK_PROMPT).",
-)
-def table_recognition_cli(
-    input_path: str, skip_table_detection: bool, mode: str, **kwargs
-):
+def table_recognition_cli(input_path: str, skip_table_detection: bool, **kwargs):
     # Layout runs on the low-DPI render; table crops come from the high-DPI
     # image so the table_rec model sees readable cell content.
     loader = CLILoader(input_path, kwargs, highres=True)
 
     manager = SuryaInferenceManager()
     layout_predictor = LayoutPredictor(manager)
-    table_rec_predictor = TableRecPredictor(manager)
+    table_rec_predictor = TableRecPredictor()
 
     pnums = []
     prev_name = None
@@ -76,7 +68,7 @@ def table_recognition_cli(
                 table_imgs.append(img.crop(bbox))
                 table_counts_per_img.append(line.count)
 
-    table_preds = table_rec_predictor(table_imgs, mode=mode)
+    table_preds = table_rec_predictor(table_imgs)
 
     img_idx = 0
     prev_count = 0

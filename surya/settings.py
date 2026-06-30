@@ -72,17 +72,12 @@ class Settings(BaseSettings):
     SURYA_INFERENCE_TIMEOUT_SECONDS: float = 600.0
     SURYA_INFERENCE_STARTUP_TIMEOUT: float = 600.0
     SURYA_INFERENCE_LOGPROBS: bool = True
-    # Force layout/table_rec output through a JSON schema via guided decoding.
+    # Force layout output through a JSON schema via guided decoding.
     # Eliminates malformed-JSON failures at small decode-throughput cost.
     SURYA_GUIDED_LAYOUT: bool = True
-    # Disabled: with no minItems in TABLE_REC_JSON_SCHEMA, the constrained
-    # decoder closes the array after one element at temperature=0. The model
-    # produces well-formed JSON without the schema.
-    SURYA_GUIDED_TABLE_REC: bool = False
 
     # Token budgets
     SURYA_MAX_TOKENS_LAYOUT: int = 3072
-    SURYA_MAX_TOKENS_TABLE_REC: int = 3072
     SURYA_MAX_TOKENS_BLOCK_CEILING: int = 8192
     SURYA_MAX_TOKENS_FULL_PAGE: int = 12288
 
@@ -122,6 +117,21 @@ class Settings(BaseSettings):
     # ---- OCR Error (kept) ---------------------------------------------------
     OCR_ERROR_MODEL_CHECKPOINT: str = "s3://ocr_error_detection/2025_02_18"
     OCR_ERROR_BATCH_SIZE: Optional[int] = None
+
+    # ---- Fast layout / table (rf-detr, CPU) ---------------------------------
+    # Lightweight detectors. Checkpoint may be a local dir (rf-detr .pth + config.json, or an
+    # exported model.onnx + config.json), an hf://<repo>/<subfolder> ref, or an s3:// path.
+    # Override via FAST_LAYOUT_MODEL_CHECKPOINT / FAST_TABLE_MODEL_CHECKPOINT.
+    FAST_LAYOUT_MODEL_CHECKPOINT: str = "hf://datalab-to/surya_models/fast_layout_448"
+    FAST_LAYOUT_BATCH_SIZE: Optional[int] = None
+    FAST_LAYOUT_CONFIDENCE_THRESHOLD: float = 0.4
+    FAST_ORDER_MODEL_CHECKPOINT: str = "hf://datalab-to/surya_models/fast_order"
+    FAST_TABLE_MODEL_CHECKPOINT: str = "hf://datalab-to/surya_models/fast_table_v2"
+    FAST_TABLE_BATCH_SIZE: Optional[int] = None
+    FAST_TABLE_CONFIDENCE_THRESHOLD: float = 0.4
+    # Device for the rf-detr fast detectors. None = auto (cuda > mps > cpu). Override to
+    # force "cpu"/"cuda"/"mps". (ONNX engine, if used, stays CPU.)
+    FAST_DETECTOR_DEVICE: Optional[str] = None
 
     # ---- Debug / draw fonts (label rendering on annotated images) ----------
     RECOGNITION_RENDER_FONTS: Dict[str, str] = {

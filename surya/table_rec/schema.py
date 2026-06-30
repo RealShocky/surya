@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import List
 
 from pydantic import BaseModel
 
@@ -24,9 +24,8 @@ class TableCol(PolygonBox):
 class TableCell(PolygonBox):
     """Geometric cell derived from row × column intersection.
 
-    The simple-path TableRecPredictor doesn't return spanning info from the
-    model — colspan/rowspan/header come from the full-path HTML output if
-    needed."""
+    The detector returns rows and columns only; cells are their geometric
+    intersections, so no colspan/rowspan/header info is available."""
 
     row_id: int
     col_id: int
@@ -42,7 +41,4 @@ class TableResult(BaseModel):
     cols: List[TableCol]
     cells: List[TableCell]
     image_bbox: List[float]
-    raw: Optional[str] = None  # raw model output
-    html: Optional[str] = None  # populated when full-path was used
-    mode: str = "simple"  # "simple" | "full"
     error: bool = False

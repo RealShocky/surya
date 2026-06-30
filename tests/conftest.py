@@ -41,8 +41,8 @@ def recognition_predictor(manager) -> RecognitionPredictor:
 
 
 @pytest.fixture(scope="session")
-def table_rec_predictor(manager) -> TableRecPredictor:
-    return TableRecPredictor(manager)
+def table_rec_predictor() -> TableRecPredictor:
+    return TableRecPredictor()
 
 
 @pytest.fixture(scope="session")
