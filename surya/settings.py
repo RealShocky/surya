@@ -128,7 +128,6 @@ class Settings(BaseSettings):
     DETECTOR_SERVER_HOST: str = "127.0.0.1"
     DETECTOR_SERVER_PORT: Optional[int] = None
     DETECTOR_SERVER_AUTOSTART: bool = True
-    DETECTOR_SERVER_KEEP_ALIVE: bool = False
     DETECTOR_SERVER_STARTUP_TIMEOUT: float = 300.0
     DETECTOR_SERVER_TIMEOUT: float = 600.0
     DETECTOR_SERVER_BATCH_WAIT_MS: int = 5
@@ -142,7 +141,6 @@ class Settings(BaseSettings):
     OCR_ERROR_SERVER_HOST: str = "127.0.0.1"
     OCR_ERROR_SERVER_PORT: Optional[int] = None
     OCR_ERROR_SERVER_AUTOSTART: bool = True
-    OCR_ERROR_SERVER_KEEP_ALIVE: bool = False
     OCR_ERROR_SERVER_STARTUP_TIMEOUT: float = 300.0
     OCR_ERROR_SERVER_TIMEOUT: float = 600.0
     OCR_ERROR_SERVER_BATCH_WAIT_MS: int = 5
@@ -177,9 +175,6 @@ class Settings(BaseSettings):
     FAST_LAYOUT_SERVER_HOST: str = "127.0.0.1"
     FAST_LAYOUT_SERVER_PORT: Optional[int] = None  # None = pick a free port
     FAST_LAYOUT_SERVER_AUTOSTART: bool = True
-    # Keep the spawned server alive after the spawning process exits, so later runs
-    # attach instead of paying model-load again.
-    FAST_LAYOUT_SERVER_KEEP_ALIVE: bool = False
     FAST_LAYOUT_SERVER_STARTUP_TIMEOUT: float = 300.0
     FAST_LAYOUT_SERVER_TIMEOUT: float = 600.0  # client request timeout
     # Server-side continuous batching: coalesce pages arriving within this window

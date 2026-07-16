@@ -178,6 +178,9 @@ def run_server(
     configure_logging()
     batcher = _Batcher(engine, config)
     httpd = ThreadingHTTPServer((host, port), _make_handler(engine, batcher, config))
+    # The server is persistent: it is not tied to the process that spawned it, so
+    # many client processes can share it and the spawner exiting does not tear it
+    # down. Clients re-spawn it on demand if it ever goes away (crash/reboot/kill).
     logger.info(
         f"{config.backend} server listening on http://{host}:{port} "
         f"(model={config.model_name}, max_batch={config.max_batch})"

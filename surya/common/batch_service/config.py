@@ -22,7 +22,6 @@ class ServiceConfig:
     external_url: Optional[str]  # pinned server; skip spawn
     port: Optional[int]  # None = pick a free port
     autostart: bool
-    keep_alive: bool
     startup_timeout: float
     request_timeout: float
     batch_wait_ms: int  # coalescing window
@@ -48,7 +47,6 @@ def service_config_from_settings(
         external_url=s("URL"),
         port=s("PORT"),
         autostart=s("AUTOSTART", True),
-        keep_alive=s("KEEP_ALIVE", False),
         startup_timeout=s("STARTUP_TIMEOUT", 300.0),
         request_timeout=s("TIMEOUT", 600.0),
         batch_wait_ms=s("BATCH_WAIT_MS", 5),

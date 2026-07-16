@@ -88,22 +88,56 @@ class BatchServiceClient:
                 external_url=self.config.external_url,
                 autostart=self.config.autostart,
                 fixed_port=self.config.port,
-                keep_alive=self.config.keep_alive,
+                # Always keep_alive so spawn.py does NOT register an atexit kill:
+                # many client processes share one server, and the spawning process
+                # exiting must not tear it down mid-request for the others. The
+                # server is persistent; we re-attach/re-spawn below if it goes away.
+                keep_alive=True,
             )
             self._base_url = spawned.base_url
             self._http = httpx.Client(
-                base_url=self._base_url, timeout=self.config.request_timeout
+                base_url=self._base_url,
+                # connect fails fast if the server is gone; reads can be long
+                # (large batches). No keep-alive: avoids reusing a stale socket to
+                # a server that has since died, which would hang instead of erroring.
+                timeout=httpx.Timeout(self.config.request_timeout, connect=10.0),
+                limits=httpx.Limits(max_keepalive_connections=0),
             )
             return self._base_url
+
+    def _reset(self) -> None:
+        """Drop the cached server handle so the next call re-attaches/re-spawns."""
+        with self._lock:
+            if self._http is not None:
+                try:
+                    self._http.close()
+                except Exception:
+                    pass
+            self._http = None
+            self._base_url = None
 
     def infer(self, items: List[Any], params: Optional[dict] = None) -> List[Any]:
         if not items:
             return []
-        self._ensure_started()
         payload = {
             "items": [self._encode_item(i) for i in items],
             "params": params or {},
         }
-        resp = self._http.post("/v1/infer", json=payload)
-        resp.raise_for_status()
-        return [self._decode_result(r) for r in resp.json()["results"]]
+        # The server is persistent and shared; if it has gone away (crash, reboot,
+        # manual kill, or a race during startup) the connection fails. Drop the
+        # cached handle and re-attach/re-spawn, then retry once.
+        last_err = None
+        for attempt in range(2):
+            self._ensure_started()
+            try:
+                resp = self._http.post("/v1/infer", json=payload)
+                resp.raise_for_status()
+                return [self._decode_result(r) for r in resp.json()["results"]]
+            except (httpx.TransportError, httpx.TimeoutException) as e:
+                # Any transport/timeout failure means the server is gone or
+                # unreachable (crash, reboot, manual kill, half-open socket). Drop
+                # the cached handle and re-attach/re-spawn, then retry once. HTTP
+                # status errors (5xx from a live server) are NOT retried.
+                last_err = e
+                self._reset()
+        raise last_err
